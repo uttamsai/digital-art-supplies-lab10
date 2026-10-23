@@ -7,6 +7,7 @@ import ShopView from './views/ShopView.jsx'
 import ProductDetailView from './views/ProductDetailView.jsx'
 import AccountView from './views/AccountView.jsx'
 import CreateAccountView from './views/CreateAccountView.jsx'
+import CustomersView from './views/CustomersView.jsx'
 import CartView from './views/CartView.jsx'
 import products from './data/products.json'
 import { makeCartItemId, calcItemCount } from './utils/cart.js'
@@ -90,6 +91,7 @@ function App() {
             />
             <Route path="/account" element={<AccountView />} />
             <Route path="/account/create" element={<CreateAccountView />} />
+            <Route path="/customers" element={<CustomersView />} />
             <Route
               path="/cart"
               element={

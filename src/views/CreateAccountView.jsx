@@ -11,6 +11,7 @@ const US_STATES = new Set([
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const ZIP_RE = /^\d{5}(-\d{4})?$/
 const PHONE_RE = /^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/
+const apiUrl = import.meta.env.VITE_CUSTOMERS_API_URL || 'http://localhost:8080/api/customers'
 
 const emptyForm = {
   login: '',
@@ -24,21 +25,24 @@ const emptyForm = {
   phone: '',
 }
 
+// Show the signup form and save valid customer details through the API.
 // The Create Account form. login, password, and email are required. The
 // address fields (street/city/state/zip) are optional as a group, but if any
 // one of them is filled in, all of them must be, and each field's format is
 // checked. Phone is optional but must be a valid US phone format if given.
-// All validation here is client-side JavaScript — there is no backend to
-// actually create an account.
+// The existing form layout is preserved; valid submissions are saved by the API.
 function CreateAccountView() {
   const [form, setForm] = useState(emptyForm)
   const [errors, setErrors] = useState({})
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [serverError, setServerError] = useState('')
 
   function update(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
+  // Check the form fields before sending a signup request.
   function validate(values) {
     const nextErrors = {}
 
@@ -84,7 +88,7 @@ function CreateAccountView() {
       }
     }
 
-    // Optional phone: only validated if provided.
+    // only validated if provided.
     if (values.phone.trim() && !PHONE_RE.test(values.phone.trim())) {
       nextErrors.phone = 'Enter a valid phone number (e.g. 555-123-4567).'
     }
@@ -92,13 +96,33 @@ function CreateAccountView() {
     return nextErrors
   }
 
-  function handleSubmit(e) {
+  // Send a valid signup to the server and show the result.
+  async function handleSubmit(e) {
     e.preventDefault()
     const nextErrors = validate(form)
     setErrors(nextErrors)
-    setSubmitted(Object.keys(nextErrors).length === 0)
+    setSubmitted(false)
+    setServerError('')
+    if (Object.keys(nextErrors).length > 0) return
+    setSubmitting(true)
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ login: form.login, email: form.email, password: form.password }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Could not create account.')
+      setSubmitted(true)
+      setForm(emptyForm)
+    } catch (error) {
+      setServerError(error.message || 'Could not create account.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
+  // Render a labeled input with its validation message.
   function field(name, label, type = 'text', required = false) {
     return (
       <div className="mb-3">
@@ -130,10 +154,10 @@ function CreateAccountView() {
 
           {submitted && (
             <div className="alert alert-success" role="status">
-              All fields passed validation. (This demo has no backend, so no account is
-              actually created.)
+              Account saved. Your login now appears in the Customers list.
             </div>
           )}
+          {serverError && <div className="alert alert-danger" role="alert">{serverError}</div>}
 
           <form onSubmit={handleSubmit} noValidate>
             <h2 className="h6 text-uppercase text-muted">Login Info</h2>
@@ -157,7 +181,7 @@ function CreateAccountView() {
             </h2>
             {field('phone', 'Phone', 'tel')}
 
-            <button type="submit" className="btn btn-primary w-100 mt-3">
+            <button type="submit" className="btn btn-primary w-100 mt-3" disabled={submitting}>
               Create Account
             </button>
           </form>

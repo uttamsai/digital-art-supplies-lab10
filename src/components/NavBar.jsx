@@ -86,6 +86,11 @@ function NavBar({ cartCount }) {
               </NavLink>
             </li>
             <li className="nav-item">
+              <NavLink className={linkClass} to="/customers">
+                Customers
+              </NavLink>
+            </li>
+            <li className="nav-item">
               <NavLink
                 className={(navData) => `${linkClass(navData)} position-relative`}
                 to="/cart"
